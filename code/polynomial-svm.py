@@ -14,6 +14,8 @@ from sklearn.metrics import confusion_matrix
 from sklearn.svm import SVC
 from sklearn.metrics import accuracy_score
 from sklearn.model_selection import cross_val_score, validation_curve
+from sklearn import preprocessing
+from sklearn.grid_search import GridSearchCV
 
 # File path containing the dataset
 input_file = '../data/spambase.data'
@@ -22,41 +24,26 @@ dataset = np.loadtxt(input_file, delimiter=",")
 
 # Split the dataset matrix into input and output values
 X = dataset[:,:-1]
+# Preprocessing data is key for SVC
+X_train_minmax = preprocessing.scale(X)
+
 y = dataset[:,-1]
 
 # Split the dataset into a training and test set
-X_train, X_test, y_train, y_test = train_test_split(X, y)
+X_train, X_test, y_train, y_test = train_test_split(X_train_minmax, y)
 
-classifier = SVC(kernel='poly', verbose=3)
+param_grid = [{'C': [0.01, 0.1, 1, 10, 100], 'kernel': ['linear']},
+            {'C': [0.01, 0.1, 1, 10, 100], 'kernel': ['poly'], 'degree': [2,3,4,5]},
+            {'C': [0.01, 0.1, 1, 10, 100], 'kernel': ['rbf'], 'gamma': [0.1,0.01,0.001,0.0001]}
+            ]
+clf = GridSearchCV(SVC(class_weight='balanced'), param_grid)
+clf = clf.fit(X_train, y_train)
+classifier = clf.best_estimator_
+print (classifier)
 
 # Run perceptron model on data and make predictions on test data
 y_pred = classifier.fit(X_train, y_train).predict(X_test)
 prediction_accuracy = accuracy_score(y_test, y_pred)
-
-
-# cross_validation = cross_val_score(classifier, X_train, y_train, cv=5)
-param_range = np.logspace(3, 4, 2)
-#train_scores, test_scores = validation_curve(SVC(kernel='poly'), X_train, y_train, "degree", param_range)
-
-
-train_scores_mean = 1
-train_scores_max = 1
-test_scores_mean = 1
-test_scores_max = 1
-
-
-plt.title("Validation Curve with Perceptron")
-plt.xlabel("alpha")
-plt.ylabel("Score")
-lw = 2
-plt.semilogx(param_range, train_scores_mean, label="Training score",
-             color="darkorange", lw=lw)
-plt.semilogx(param_range, test_scores_mean, label="Cross-validation score",
-             color="navy", lw=lw)
-plt.legend(loc="best")
-
-plt.figure(2)
-
 
 tn, fp, fn, tp = confusion_matrix(y_test, y_pred).ravel()
 cnf_matrix = confusion_matrix(y_test, y_pred)
@@ -95,6 +82,6 @@ plot_confusion_matrix(cnf_matrix, classes=["Not Spam", "Spam"], normalize=True,
                       title='Normalized confusion matrix')
 
 
-print ("Best training accuracy = %f \nBest validation accuracy = %f \nTest accuracy = %f" % (train_scores_max, test_scores_max, prediction_accuracy))
+print ("Test accuracy = %f" % (prediction_accuracy))
 
 plt.show()
