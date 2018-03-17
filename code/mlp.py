@@ -32,9 +32,9 @@ y = dataset[:,-1]
 # Split the dataset into a training and test set
 X_train, X_test, y_train, y_test = train_test_split(X_train_minmax, y)
 
-param_grid = [{"activation": ["relu", "identity"]}
+param_grid = [{"activation": ["relu", "identity", "logistic"], "alpha": [0.0001, 0.001, 0.01, 0.1, 1], "solver": ["lbfgs", "sgd", "adam"]}
             ]
-clf = GridSearchCV(MLPClassifier(alpha=1), param_grid)
+clf = GridSearchCV(MLPClassifier(max_iter=10000), param_grid)
 clf = clf.fit(X_train, y_train)
 classifier = clf.best_estimator_
 print (classifier)
